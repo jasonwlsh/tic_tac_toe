@@ -26,7 +26,26 @@
             margin-top: 5px;
             font-size: 14px;
             color: #333;
+            font-weight: bold;
+            height: 20px; /* 固定高度避免文字跳動 */
         }
+        /* 新增按鈕樣式 */
+        #restart-btn {
+            margin-top: 15px;
+            padding: 10px 25px;
+            font-size: 16px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none; /* 預設隱藏 */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        #restart-btn:hover {
+            background-color: #0b7dda;
+        }
+
         #board {
             margin-top: 20px;
             display: grid;
@@ -54,7 +73,7 @@
         }
         .cell.win {
             background-color: cyan;
-            transition: background-color 0.3s; /* 加入過渡效果讓變色更滑順 */
+            transition: background-color 0.3s;
         }
         .cell.tie {
             background-color: lightcoral;
@@ -67,6 +86,8 @@
 <h1>112511188 甯宇誠 - Lab3 Tic Tac Toe</h1>
 <h2>Mode: Play with Computer (Minimax AI)</h2>
 <div id="status">Player X (You) turn</div>
+
+<button id="restart-btn" onclick="resetGame()">Play Again</button>
 
 <div id="board">
     <div class="cell" id="cell-0-0" onclick="handleClick(0,0)"></div>
@@ -113,6 +134,7 @@
         cell.textContent = HUMAN;
         cell.classList.add("disabled");
 
+        // 依然保留一個極短的延遲，確保 UI 渲染順暢
         setTimeout(() => {
             const result = checkWinner();
             if (result.winner !== null) {
@@ -167,12 +189,11 @@
         return { winner: "tie", paths: [] };
     }
 
-    // === 修改重點：declareWinner 函式 ===
+    // === 修改重點：改用按鈕控制 ===
     function declareWinner(winner, paths) {
         gameOver = true;
         let message = "";
 
-        // 1. 先處理視覺變更 (變色)
         if (winner === "tie") {
             for (let r = 0; r < 3; r++) {
                 for (let c = 0; c < 3; c++) {
@@ -192,14 +213,10 @@
         }
         
         setStatus(message);
-
-        // 2. 使用 setTimeout 延遲彈出視窗
-        // 這樣瀏覽器才有時間將上面的 CSS class 渲染出來給使用者看
-        setTimeout(() => {
-            const restart = confirm(`${message} Do you want to restart the game?`);
-            if (restart) resetGame();
-            else disableAll();
-        }, 100); // 延遲 100 毫秒 (0.1秒)，足夠讓畫面更新
+        disableAll(); // 確保剩下的格子不能點
+        
+        // 顯示重新開始按鈕
+        document.getElementById("restart-btn").style.display = "block";
     }
 
     function resetGame() {
@@ -211,11 +228,14 @@
         currentPlayer = HUMAN;
         gameOver = false;
         setStatus("Player X (You) turn");
+        
+        // 隱藏按鈕
+        document.getElementById("restart-btn").style.display = "none";
+
         for (let r = 0; r < 3; r++) {
             for (let c = 0; c < 3; c++) {
                 const cell = getCell(r, c);
                 cell.textContent = "";
-                // 移除 win, tie, disabled class
                 cell.className = "cell"; 
             }
         }
@@ -231,6 +251,7 @@
     }
 
     // -------- Minimax AI --------
+    // (AI 部分程式碼完全沒變，但為了完整性保留在此)
 
     function isMovesLeft() {
         for (let r = 0; r < 3; r++) {
@@ -242,21 +263,18 @@
     }
 
     function evaluateBoard() {
-        // Rows
         for (let r = 0; r < 3; r++) {
             if (board[r][0] && board[r][0] === board[r][1] && board[r][1] === board[r][2]) {
                 if (board[r][0] === AI) return 10;
                 if (board[r][0] === HUMAN) return -10;
             }
         }
-        // Columns
         for (let c = 0; c < 3; c++) {
             if (board[0][c] && board[0][c] === board[1][c] && board[1][c] === board[2][c]) {
                 if (board[0][c] === AI) return 10;
                 if (board[0][c] === HUMAN) return -10;
             }
         }
-        // Diagonals
         if (board[0][0] && board[0][0] === board[1][1] && board[1][1] === board[2][2]) {
             if (board[0][0] === AI) return 10;
             if (board[0][0] === HUMAN) return -10;
@@ -265,7 +283,6 @@
             if (board[0][2] === AI) return 10;
             if (board[0][2] === HUMAN) return -10;
         }
-
         return 0;
     }
 
