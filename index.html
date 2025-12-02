@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>112511188 甯宇誠 Lab3 Tic Tac Toe</title>
+    <style>
+        body {
+            margin: 0;
+            padding-top: 20px;
+            background-color: #f0f0f0; /* 類似 Tkinter 預設背景 */
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        h2 {
+            margin: 5px 0 10px 0;
+            font-size: 16px;
+            color: #444;
+        }
+        #status {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #333;
+        }
+        #board {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 80px);
+            gap: 3px;
+            background-color: #d0d0d0; /* 像一塊框 */
+            padding: 5px;
+            border: 3px solid #888;
+        }
+        .cell {
+            width: 80px;
+            height: 80px;
+            font-size: 40px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 80px;
+            background-color: #e0e0e0;  /* 類似 Button 預設色 */
+            border: 2px solid #888;
+            cursor: pointer;
+            user-select: none;
+        }
+        .cell.disabled {
+            cursor: default;
+        }
+        .cell.win {
+            background-color: cyan;       /* 勝利那條線塗色 */
+        }
+        .cell.tie {
+            background-color: lightcoral; /* 平手全部塗色 */
+        }
+    </style>
+</head>
+<body>
+
+<h1>112511188 甯宇誠 - Lab3 Tic Tac Toe</h1>
+<h2>Mode: Play with Computer (Minimax AI)</h2>
+<div id="status">Player X (You) turn</div>
+
+<div id="board">
+    <div class="cell" id="cell-0-0" onclick="handleClick(0,0)"></div>
+    <div class="cell" id="cell-0-1" onclick="handleClick(0,1)"></div>
+    <div class="cell" id="cell-0-2" onclick="handleClick(0,2)"></div>
+
+    <div class="cell" id="cell-1-0" onclick="handleClick(1,0)"></div>
+    <div class="cell" id="cell-1-1" onclick="handleClick(1,1)"></div>
+    <div class="cell" id="cell-1-2" onclick="handleClick(1,2)"></div>
+
+    <div class="cell" id="cell-2-0" onclick="handleClick(2,0)"></div>
+    <div class="cell" id="cell-2-1" onclick="handleClick(2,1)"></div>
+    <div class="cell" id="cell-2-2" onclick="handleClick(2,2)"></div>
+</div>
+
+<script>
+    const HUMAN = "X";
+    const AI = "O";
+
+    let currentPlayer = HUMAN;
+    let gameOver = false;
+
+    let board = [
+        [null, null, null],
+        [null, null, null],
+        [null, null, null]
+    ];
+
+    function getCell(row, col) {
+        return document.getElementById(`cell-${row}-${col}`);
+    }
+
+    function setStatus(text) {
+        document.getElementById("status").textContent = text;
+    }
+
+    function handleClick(row, col) {
+        if (gameOver) return;
+        if (currentPlayer !== HUMAN) return;
+        if (board[row][col] !== null) return;
+
+        board[row][col] = HUMAN;
+        const cell = getCell(row, col);
+        cell.textContent = HUMAN;
+        cell.classList.add("disabled");
+
+        const result = checkWinner();
+        if (result.winner !== null) {
+            declareWinner(result.winner, result.paths);
+        } else {
+            currentPlayer = AI;
+            setStatus("Computer (O) thinking...");
+            setTimeout(computerMove, 200);
+        }
+    }
+
+    // ---- 勝負判斷（多條連線一起塗色，跟 Lab 規則一樣）----
+    function checkWinner() {
+        let winningPaths = [];
+
+        // 橫列
+        for (let r = 0; r < 3; r++) {
+            if (board[r][0] && board[r][0] === board[r][1] && board[r][1] === board[r][2]) {
+                winningPaths.push([[r,0], [r,1], [r,2]]);
+            }
+        }
+
+        // 直行
+        for (let c = 0; c < 3; c++) {
+            if (board[0][c] && board[0][c] === board[1][c] && board[1][c] === board[2][c]) {
+                winningPaths.push([[0,c], [1,c], [2,c]]);
+            }
+        }
+
+        // 對角線
+        if (board[0][0] && board[0][0] === board[1][1] && board[1][1] === board[2][2]) {
+            winningPaths.push([[0,0], [1,1], [2,2]]);
+        }
+        if (board[0][2] && board[0][2] === board[1][1] && board[1][1] === board[2][0]) {
+            winningPaths.push([[0,2], [1,1], [2,0]]);
+        }
+
+        if (winningPaths.length > 0) {
+            const [firstR, firstC] = winningPaths[0][0];
+            const winner = board[firstR][firstC];
+            return { winner: winner, paths: winningPaths };
+        }
+
+        // 檢查是否平手（盤面已滿）
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                if (board[r][c] === null) {
+                    return { winner: null, paths: [] };
+                }
+            }
+        }
+
+        return { winner: "tie", paths: [] };
+    }
+
+    function declareWinner(winner, paths) {
+        gameOver = true;
+
+        if (winner === "tie") {
+            // 平手：全部 button 背景改色（Lab 規格）
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 3; c++) {
+                    const cell = getCell(r, c);
+                    cell.classList.add("tie", "disabled");
+                }
+            }
+            setStatus("It's a tie!");
+            const restart = confirm("It's a tie! Do you want to restart the game?");
+            if (restart) resetGame();
+            else disableAll();
+        } else {
+            // 勝利：把所有連線的格子背景改色（可能同時兩條線）
+            paths.forEach(path => {
+                path.forEach(([r, c]) => {
+                    const cell = getCell(r, c);
+                    cell.classList.add("win");
+                });
+            });
+            setStatus(`Player ${winner} wins!`);
+            const restart = confirm(`Player ${winner} wins! Do you want to restart the game?`);
+            if (restart) resetGame();
+            else disableAll();
+        }
+    }
+
+    function resetGame() {
+        board = [
+            [null, null, null],
+            [null, null, null],
+            [null, null, null]
+        ];
+        currentPlayer = HUMAN;
+        gameOver = false;
+        setStatus("Player X (You) turn");
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                const cell = getCell(r, c);
+                cell.textContent = "";
+                cell.className = "cell";
+            }
+        }
+    }
+
+    function disableAll() {
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                const cell = getCell(r, c);
+                cell.classList.add("disabled");
+            }
+        }
+    }
+
+    // -------- Minimax AI --------
+
+    function isMovesLeft() {
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                if (board[r][c] === null) return true;
+            }
+        }
+        return false;
+    }
+
+    // 評分：AI 贏 +10、人類贏 -10、其他 0
+    function evaluateBoard() {
+        // 橫列
+        for (let r = 0; r < 3; r++) {
+            if (board[r][0] && board[r][0] === board[r][1] && board[r][1] === board[r][2]) {
+                if (board[r][0] === AI) return 10;
+                if (board[r][0] === HUMAN) return -10;
+            }
+        }
+
+        // 直行
+        for (let c = 0; c < 3; c++) {
+            if (board[0][c] && board[0][c] === board[1][c] && board[1][c] === board[2][c]) {
+                if (board[0][c] === AI) return 10;
+                if (board[0][c] === HUMAN) return -10;
+            }
+        }
+
+        // 對角線
+        if (board[0][0] && board[0][0] === board[1][1] && board[1][1] === board[2][2]) {
+            if (board[0][0] === AI) return 10;
+            if (board[0][0] === HUMAN) return -10;
+        }
+        if (board[0][2] && board[0][2] === board[1][1] && board[1][1] === board[2][0]) {
+            if (board[0][2] === AI) return 10;
+            if (board[0][2] === HUMAN) return -10;
+        }
+
+        return 0;
+    }
+
+    function minimax(depth, isMax) {
+        const score = evaluateBoard();
+
+        if (score === 10) return score - depth;   // AI 贏，越快越好
+        if (score === -10) return score + depth;  // 人贏，越晚發生越好（對 AI）
+
+        if (!isMovesLeft()) return 0;            // 平手
+
+        if (isMax) {
+            let best = -Infinity;
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 3; c++) {
+                    if (board[r][c] === null) {
+                        board[r][c] = AI;
+                        best = Math.max(best, minimax(depth + 1, false));
+                        board[r][c] = null;
+                    }
+                }
+            }
+            return best;
+        } else {
+            let best = Infinity;
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 3; c++) {
+                    if (board[r][c] === null) {
+                        board[r][c] = HUMAN;
+                        best = Math.min(best, minimax(depth + 1, true));
+                        board[r][c] = null;
+                    }
+                }
+            }
+            return best;
+        }
+    }
+
+    function findBestMove() {
+        let bestVal = -Infinity;
+        let bestMove = { row: -1, col: -1 };
+
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                if (board[r][c] === null) {
+                    board[r][c] = AI;
+                    const moveVal = minimax(0, false);
+                    board[r][c] = null;
+                    if (moveVal > bestVal) {
+                        bestVal = moveVal;
+                        bestMove = { row: r, col: c };
+                    }
+                }
+            }
+        }
+        return bestMove;
+    }
+
+    function computerMove() {
+        if (gameOver) return;
+
+        const bestMove = findBestMove();
+        const r = bestMove.row;
+        const c = bestMove.col;
+        if (r === -1 || c === -1) return;
+
+        board[r][c] = AI;
+        const cell = getCell(r, c);
+        cell.textContent = AI;
+        cell.classList.add("disabled");
+
+        const result = checkWinner();
+        if (result.winner !== null) {
+            declareWinner(result.winner, result.paths);
+        } else {
+            currentPlayer = HUMAN;
+            setStatus("Player X (You) turn");
+        }
+    }
+</script>
+
+</body>
+</html>
