@@ -54,9 +54,11 @@
         }
         .cell.win {
             background-color: cyan;
+            transition: background-color 0.3s; /* 加入過渡效果讓變色更滑順 */
         }
         .cell.tie {
             background-color: lightcoral;
+            transition: background-color 0.3s;
         }
     </style>
 </head>
@@ -101,7 +103,6 @@
         document.getElementById("status").textContent = text;
     }
 
-    // === 這裡有改：讓畫面先更新再檢查勝負 ===
     function handleClick(row, col) {
         if (gameOver) return;
         if (currentPlayer !== HUMAN) return;
@@ -112,7 +113,6 @@
         cell.textContent = HUMAN;
         cell.classList.add("disabled");
 
-        // 讓瀏覽器先重繪，之後再檢查勝負
         setTimeout(() => {
             const result = checkWinner();
             if (result.winner !== null) {
@@ -128,18 +128,21 @@
     function checkWinner() {
         let winningPaths = [];
 
+        // Check Rows
         for (let r = 0; r < 3; r++) {
             if (board[r][0] && board[r][0] === board[r][1] && board[r][1] === board[r][2]) {
                 winningPaths.push([[r,0], [r,1], [r,2]]);
             }
         }
 
+        // Check Columns
         for (let c = 0; c < 3; c++) {
             if (board[0][c] && board[0][c] === board[1][c] && board[1][c] === board[2][c]) {
                 winningPaths.push([[0,c], [1,c], [2,c]]);
             }
         }
 
+        // Check Diagonals
         if (board[0][0] && board[0][0] === board[1][1] && board[1][1] === board[2][2]) {
             winningPaths.push([[0,0], [1,1], [2,2]]);
         }
@@ -164,9 +167,12 @@
         return { winner: "tie", paths: [] };
     }
 
+    // === 修改重點：declareWinner 函式 ===
     function declareWinner(winner, paths) {
         gameOver = true;
+        let message = "";
 
+        // 1. 先處理視覺變更 (變色)
         if (winner === "tie") {
             for (let r = 0; r < 3; r++) {
                 for (let c = 0; c < 3; c++) {
@@ -174,10 +180,7 @@
                     cell.classList.add("tie", "disabled");
                 }
             }
-            setStatus("It's a tie!");
-            const restart = confirm("It's a tie! Do you want to restart the game?");
-            if (restart) resetGame();
-            else disableAll();
+            message = "It's a tie!";
         } else {
             paths.forEach(path => {
                 path.forEach(([r, c]) => {
@@ -185,11 +188,18 @@
                     cell.classList.add("win");
                 });
             });
-            setStatus(`Player ${winner} wins!`);
-            const restart = confirm(`Player ${winner} wins! Do you want to restart the game?`);
+            message = `Player ${winner} wins!`;
+        }
+        
+        setStatus(message);
+
+        // 2. 使用 setTimeout 延遲彈出視窗
+        // 這樣瀏覽器才有時間將上面的 CSS class 渲染出來給使用者看
+        setTimeout(() => {
+            const restart = confirm(`${message} Do you want to restart the game?`);
             if (restart) resetGame();
             else disableAll();
-        }
+        }, 100); // 延遲 100 毫秒 (0.1秒)，足夠讓畫面更新
     }
 
     function resetGame() {
@@ -205,7 +215,8 @@
             for (let c = 0; c < 3; c++) {
                 const cell = getCell(r, c);
                 cell.textContent = "";
-                cell.className = "cell";
+                // 移除 win, tie, disabled class
+                cell.className = "cell"; 
             }
         }
     }
@@ -231,20 +242,21 @@
     }
 
     function evaluateBoard() {
+        // Rows
         for (let r = 0; r < 3; r++) {
             if (board[r][0] && board[r][0] === board[r][1] && board[r][1] === board[r][2]) {
                 if (board[r][0] === AI) return 10;
                 if (board[r][0] === HUMAN) return -10;
             }
         }
-
+        // Columns
         for (let c = 0; c < 3; c++) {
             if (board[0][c] && board[0][c] === board[1][c] && board[1][c] === board[2][c]) {
                 if (board[0][c] === AI) return 10;
                 if (board[0][c] === HUMAN) return -10;
             }
         }
-
+        // Diagonals
         if (board[0][0] && board[0][0] === board[1][1] && board[1][1] === board[2][2]) {
             if (board[0][0] === AI) return 10;
             if (board[0][0] === HUMAN) return -10;
@@ -312,7 +324,6 @@
         return bestMove;
     }
 
-    // === 這裡也有改：AI 下完子後，用 setTimeout 再檢查勝負 ===
     function computerMove() {
         if (gameOver) return;
 
@@ -340,4 +351,3 @@
 
 </body>
 </html>
-
