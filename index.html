@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>112511188 甯宇誠 Lab3 Tic-Tac-Toe</title>
+    <title>112511188 甯宇誠 Lab3 Tic Tac Toe</title>
     <style>
         body {
             margin: 0;
             padding-top: 20px;
-            background-color: #f0f0f0; /* 類似 Tkinter 預設背景 */
+            background-color: #f0f0f0;
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
@@ -33,7 +33,7 @@
             grid-template-columns: repeat(3, 80px);
             grid-template-rows: repeat(3, 80px);
             gap: 3px;
-            background-color: #d0d0d0; /* 像一塊框 */
+            background-color: #d0d0d0;
             padding: 5px;
             border: 3px solid #888;
         }
@@ -44,7 +44,7 @@
             font-weight: bold;
             text-align: center;
             line-height: 80px;
-            background-color: #e0e0e0;  /* 類似 Button 預設色 */
+            background-color: #e0e0e0;
             border: 2px solid #888;
             cursor: pointer;
             user-select: none;
@@ -53,10 +53,10 @@
             cursor: default;
         }
         .cell.win {
-            background-color: cyan;       /* 勝利那條線塗色 */
+            background-color: cyan;
         }
         .cell.tie {
-            background-color: lightcoral; /* 平手全部塗色 */
+            background-color: lightcoral;
         }
     </style>
 </head>
@@ -101,6 +101,7 @@
         document.getElementById("status").textContent = text;
     }
 
+    // === 這裡有改：讓畫面先更新再檢查勝負 ===
     function handleClick(row, col) {
         if (gameOver) return;
         if (currentPlayer !== HUMAN) return;
@@ -111,35 +112,34 @@
         cell.textContent = HUMAN;
         cell.classList.add("disabled");
 
-        const result = checkWinner();
-        if (result.winner !== null) {
-            declareWinner(result.winner, result.paths);
-        } else {
-            currentPlayer = AI;
-            setStatus("Computer (O) thinking...");
-            setTimeout(computerMove, 200);
-        }
+        // 讓瀏覽器先重繪，之後再檢查勝負
+        setTimeout(() => {
+            const result = checkWinner();
+            if (result.winner !== null) {
+                declareWinner(result.winner, result.paths);
+            } else {
+                currentPlayer = AI;
+                setStatus("Computer (O) thinking...");
+                setTimeout(computerMove, 200);
+            }
+        }, 10);
     }
 
-    // ---- 勝負判斷（多條連線一起塗色，跟 Lab 規則一樣）----
     function checkWinner() {
         let winningPaths = [];
 
-        // 橫列
         for (let r = 0; r < 3; r++) {
             if (board[r][0] && board[r][0] === board[r][1] && board[r][1] === board[r][2]) {
                 winningPaths.push([[r,0], [r,1], [r,2]]);
             }
         }
 
-        // 直行
         for (let c = 0; c < 3; c++) {
             if (board[0][c] && board[0][c] === board[1][c] && board[1][c] === board[2][c]) {
                 winningPaths.push([[0,c], [1,c], [2,c]]);
             }
         }
 
-        // 對角線
         if (board[0][0] && board[0][0] === board[1][1] && board[1][1] === board[2][2]) {
             winningPaths.push([[0,0], [1,1], [2,2]]);
         }
@@ -153,7 +153,6 @@
             return { winner: winner, paths: winningPaths };
         }
 
-        // 檢查是否平手（盤面已滿）
         for (let r = 0; r < 3; r++) {
             for (let c = 0; c < 3; c++) {
                 if (board[r][c] === null) {
@@ -169,7 +168,6 @@
         gameOver = true;
 
         if (winner === "tie") {
-            // 平手：全部 button 背景改色（Lab 規格）
             for (let r = 0; r < 3; r++) {
                 for (let c = 0; c < 3; c++) {
                     const cell = getCell(r, c);
@@ -181,7 +179,6 @@
             if (restart) resetGame();
             else disableAll();
         } else {
-            // 勝利：把所有連線的格子背景改色（可能同時兩條線）
             paths.forEach(path => {
                 path.forEach(([r, c]) => {
                     const cell = getCell(r, c);
@@ -233,9 +230,7 @@
         return false;
     }
 
-    // 評分：AI 贏 +10、人類贏 -10、其他 0
     function evaluateBoard() {
-        // 橫列
         for (let r = 0; r < 3; r++) {
             if (board[r][0] && board[r][0] === board[r][1] && board[r][1] === board[r][2]) {
                 if (board[r][0] === AI) return 10;
@@ -243,7 +238,6 @@
             }
         }
 
-        // 直行
         for (let c = 0; c < 3; c++) {
             if (board[0][c] && board[0][c] === board[1][c] && board[1][c] === board[2][c]) {
                 if (board[0][c] === AI) return 10;
@@ -251,7 +245,6 @@
             }
         }
 
-        // 對角線
         if (board[0][0] && board[0][0] === board[1][1] && board[1][1] === board[2][2]) {
             if (board[0][0] === AI) return 10;
             if (board[0][0] === HUMAN) return -10;
@@ -267,10 +260,10 @@
     function minimax(depth, isMax) {
         const score = evaluateBoard();
 
-        if (score === 10) return score - depth;   // AI 贏，越快越好
-        if (score === -10) return score + depth;  // 人贏，越晚發生越好（對 AI）
+        if (score === 10) return score - depth;
+        if (score === -10) return score + depth;
 
-        if (!isMovesLeft()) return 0;            // 平手
+        if (!isMovesLeft()) return 0;
 
         if (isMax) {
             let best = -Infinity;
@@ -319,6 +312,7 @@
         return bestMove;
     }
 
+    // === 這裡也有改：AI 下完子後，用 setTimeout 再檢查勝負 ===
     function computerMove() {
         if (gameOver) return;
 
@@ -332,15 +326,18 @@
         cell.textContent = AI;
         cell.classList.add("disabled");
 
-        const result = checkWinner();
-        if (result.winner !== null) {
-            declareWinner(result.winner, result.paths);
-        } else {
-            currentPlayer = HUMAN;
-            setStatus("Player X (You) turn");
-        }
+        setTimeout(() => {
+            const result = checkWinner();
+            if (result.winner !== null) {
+                declareWinner(result.winner, result.paths);
+            } else {
+                currentPlayer = HUMAN;
+                setStatus("Player X (You) turn");
+            }
+        }, 10);
     }
 </script>
 
 </body>
 </html>
+
